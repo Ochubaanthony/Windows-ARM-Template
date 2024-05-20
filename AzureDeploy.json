@@ -1,0 +1,231 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "Enter the storage": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the storage"
+            }
+        },
+        "Enter the name PublicIP": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the PublicIP"
+            }
+        },
+        "Enter the name nsg": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the nsg"
+            }
+        },
+        "Enter the name VirtualNetwork": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the VirtualNetwork"
+            }
+        },
+        "Enter the subnets": {
+            "type": "string",
+            "metadata": {
+                "description": "Input subnets"
+            }
+        },
+        "Enter the name NetworkInterface": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the NetworkInterface"
+            }
+        },
+        "Enter the name of ipConfig": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the ipConfig"
+            }
+        },
+        "Enter the name of virtualMachine": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the virtualMachine"
+            }
+        },
+        "Enter the name of osProfile": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the osProfile"
+            }
+        },
+        "Enter the name of osDisk": {
+            "type": "string",
+            "metadata": {
+                "description": "Input the osDisk"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('Enter the storage')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2023-01-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "[parameters('Enter the storage')]"
+            },
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage"
+        },
+        {
+            "name": "[parameters('Enter the name PublicIP')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "[parameters('Enter the name PublicIP')]"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[parameters('Enter the name PublicIP')]"
+                }
+            }
+        },
+        {
+            "name": "[parameters('Enter the name nsg')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "[parameters('Enter the name nsg')]",
+                        "properties": {
+                            "description": "description",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('Enter the name VirtualNetwork')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('Enter the name nsg'))]"
+            ],
+            "tags": {
+                "displayName": "[parameters('Enter the name VirtualNetwork')]"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('Enter the subnets')]",
+                        "properties": {
+                            "addressPrefix": "10.0.0.0/24",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('Enter the name nsg'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('Enter the name NetworkInterface')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('Enter the name PublicIP'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('Enter the name VirtualNetwork'))]"
+            ],
+            "tags": {
+                "displayName": "[parameters('Enter the name VirtualNetwork')]"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[parameters('Enter the name of ipConfig')]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('Enter the name PublicIP'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Enter the name VirtualNetwork'), parameters('Enter the subnets'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('Enter the name of virtualMachine')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('Enter the storage'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('Enter the name NetworkInterface'))]"
+            ],
+            "tags": {
+                "displayName": "[parameters('Enter the name VirtualNetwork')]"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_A2_v2"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('Enter the name of osProfile')]",
+                    "adminUsername": "adminUsereberechukwu",
+                    "adminPassword": "adminPasswordeb564"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2012-R2-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[parameters('Enter the name of osDisk')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('Enter the name NetworkInterface'))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', parameters('Enter the storage'))).primaryEndpoints.blob]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
